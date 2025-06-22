@@ -25,6 +25,9 @@ export class GameScene extends Phaser.Scene {
     // Touch controls
     private isMobile = false;
     
+    // Player direction state
+    private playerDirection: 'down' | 'up' | 'left' | 'right' = 'down';
+    
     // Game state
     private gameWon = false;
     private levelManager: LevelManager;
@@ -37,18 +40,28 @@ export class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        // Load single consistent sprites for all levels
+        // Load core game sprites
         this.load.image('player', 'sprites/players/player_01.png');
         this.load.image('crate', 'sprites/crates/crate_01.png');
-        this.load.image('target', 'sprites/targets/environment_07.png');
+        this.load.image('target', 'sprites/targets/environment_03.png'); // Fix target loading
         this.load.image('wall', 'sprites/walls/block_01.png');
         this.load.image('ground', 'sprites/ground/ground_01.png');
         
-        // Handle loading errors gracefully
-        this.load.on('loaderror', (file: any) => {
-            console.warn('Could not load asset:', file.src);
-        });
-    
+        // Load directional player sprites for proper facing
+        this.load.image('player_down', 'sprites/players/player_01.png');    // Front facing (down)
+        this.load.image('player_down1', 'sprites/players/player_06.png');    // Front facing (down)
+        this.load.image('player_down2', 'sprites/players/player_07.png');    // Front facing (down)
+        this.load.image('player_down3', 'sprites/players/player_23.png');    // Front facing (down)
+        this.load.image('player_down4', 'sprites/players/player_24.png');    // Front facing (down)
+        this.load.image('player_up', 'sprites/players/player_02.png');      // Back facing (up)  
+        this.load.image('player_up2', 'sprites/players/player_03.png');      // Back facing (up)  
+        this.load.image('player_up3', 'sprites/players/player_04.png');      // Back facing (up)  
+        this.load.image('player_left', 'sprites/players/player_14.png');    // Left facing
+        this.load.image('player_left1', 'sprites/players/player_15.png');    // Left facing
+        this.load.image('player_left2', 'sprites/players/player_16.png');    // Left facing
+        this.load.image('player_right', 'sprites/players/player_11.png');  // Right facing
+        this.load.image('player_right1', 'sprites/players/player_12.png');  // Right facing
+        this.load.image('player_right2', 'sprites/players/player_13.png');  // Right facing
         
         // Handle loading errors gracefully
         this.load.on('loaderror', (file: any) => {
@@ -65,6 +78,9 @@ export class GameScene extends Phaser.Scene {
             this.cameras.main.setZoom(1.4); // Zoom in on desktop for larger appearance
         }
         
+        // Create player animations
+        this.createPlayerAnimations();
+        
         // Load current level
         this.loadCurrentLevel();
         
@@ -78,6 +94,89 @@ export class GameScene extends Phaser.Scene {
         if (this.isMobile) {
             this.setupTouchControls();
         }
+    }
+
+    private createPlayerAnimations() {
+        // Create idle animations for each direction (player keeps facing last direction)
+        this.anims.create({
+            key: 'player-idle-down',
+            frames: [{ key: 'player_down' }],
+            frameRate: 1,
+            repeat: 0
+        });
+
+        this.anims.create({
+            key: 'player-idle-up',
+            frames: [{ key: 'player_up' }],
+            frameRate: 1,
+            repeat: 0
+        });
+
+        this.anims.create({
+            key: 'player-idle-left',
+            frames: [{ key: 'player_left' }],
+            frameRate: 1,
+            repeat: 0
+        });
+
+        this.anims.create({
+            key: 'player-idle-right',
+            frames: [{ key: 'player_right' }],
+            frameRate: 1,
+            repeat: 0
+        });
+
+        // Create walking animations for each direction
+        this.anims.create({
+            key: 'player-walk-down',
+            frames: [
+                { key: 'player_down' },
+                { key: 'player_down1' },
+                { key: 'player_down2' },
+                { key: 'player_down3' },
+                { key: 'player_down4' },
+                { key: 'player_down1' },
+                { key: 'player_down2' },
+            ],
+            frameRate: 8,
+            repeat: 0
+        });
+
+        this.anims.create({
+            key: 'player-walk-up',
+            frames: [
+                { key: 'player_up' },
+                { key: 'player_up2' },
+                { key: 'player_up3' },
+                { key: 'player_up' }
+            ],
+            frameRate: 8,
+            repeat: 0
+        });
+
+        this.anims.create({
+            key: 'player-walk-left',
+            frames: [
+                { key: 'player_left' },
+                { key: 'player_left1' },
+                { key: 'player_left2' },
+                { key: 'player_left' }
+            ],
+            frameRate: 8,
+            repeat: 0
+        });
+
+        this.anims.create({
+            key: 'player-walk-right',
+            frames: [
+                { key: 'player_right' },
+                { key: 'player_right1' },
+                { key: 'player_right2' },
+                { key: 'player_right' }
+            ],
+            frameRate: 8,
+            repeat: 0
+        });
     }
 
     private loadCurrentLevel() {
@@ -197,13 +296,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     private createTargets() {
-        this.currentLevel.targets.forEach((targetPos, index) => {
-            const targetTexture = index % 2 === 0 ? 'target' : 'target'; // Currently using the same texture, can be changed later
-            
+        this.currentLevel.targets.forEach((targetPos) => {
             const target = this.add.sprite(
                 this.OFFSET_X + targetPos.x * this.GRID_SIZE + this.GRID_SIZE / 2,
                 this.OFFSET_Y + targetPos.y * this.GRID_SIZE + this.GRID_SIZE / 2,
-                targetTexture
+                'target'
             );
             target.setDisplaySize(this.GRID_SIZE * 0.9, this.GRID_SIZE * 0.9);
             target.setData('gridX', targetPos.x);
@@ -230,11 +327,15 @@ export class GameScene extends Phaser.Scene {
         this.player = this.add.sprite(
             this.OFFSET_X + this.currentLevel.playerStart.x * this.GRID_SIZE + this.GRID_SIZE / 2,
             this.OFFSET_Y + this.currentLevel.playerStart.y * this.GRID_SIZE + this.GRID_SIZE / 2,
-            'player'
+            'player_down' // Start facing down
         );
         this.player.setDisplaySize(this.GRID_SIZE * 0.9, this.GRID_SIZE * 0.9);
         this.player.setData('gridX', this.currentLevel.playerStart.x);
         this.player.setData('gridY', this.currentLevel.playerStart.y);
+        
+        // Set initial direction and play idle animation
+        this.playerDirection = 'down';
+        this.player.play('player-idle-down');
     }
 
     private createUI() {
@@ -431,10 +532,21 @@ export class GameScene extends Phaser.Scene {
         const newX = currentX + deltaX;
         const newY = currentY + deltaY;
         
+        // Update player direction based on movement
+        if (deltaX > 0) this.playerDirection = 'right';
+        else if (deltaX < 0) this.playerDirection = 'left';
+        else if (deltaY > 0) this.playerDirection = 'down';
+        else if (deltaY < 0) this.playerDirection = 'up';
+        
         // Check if new position is valid (not a wall and within bounds)
         if (!this.isValidPosition(newX, newY)) {
+            // Even if can't move, update facing direction
+            this.player.play(`player-idle-${this.playerDirection}`);
             return;
         }
+        
+        // Play appropriate walking animation based on direction
+        this.player.play(`player-walk-${this.playerDirection}`);
         
         // Check for crate at new position
         const crateAtNewPos = this.getCrateAt(newX, newY);
@@ -452,6 +564,9 @@ export class GameScene extends Phaser.Scene {
                 this.movePlayerTo(newX, newY);
                 // Check win condition
                 this.checkWinCondition();
+            } else {
+                // Can't push crate, but still face that direction
+                this.player.play(`player-idle-${this.playerDirection}`);
             }
         } else if (this.canMoveTo(newX, newY)) {
             // Move the player
@@ -490,10 +605,15 @@ export class GameScene extends Phaser.Scene {
     private moveCrate(crate: Phaser.GameObjects.Sprite, x: number, y: number) {
         crate.setData('gridX', x);
         crate.setData('gridY', y);
-        crate.setPosition(
-            this.OFFSET_X + x * this.GRID_SIZE + this.GRID_SIZE / 2,
-            this.OFFSET_Y + y * this.GRID_SIZE + this.GRID_SIZE / 2
-        );
+        
+        // Animate crate movement
+        this.tweens.add({
+            targets: crate,
+            x: this.OFFSET_X + x * this.GRID_SIZE + this.GRID_SIZE / 2,
+            y: this.OFFSET_Y + y * this.GRID_SIZE + this.GRID_SIZE / 2,
+            duration: 200,
+            ease: 'Power2'
+        });
     }
 
     private checkWinCondition() {
@@ -536,6 +656,9 @@ export class GameScene extends Phaser.Scene {
     private resetLevel() {
         this.gameWon = false;
         this.winText.setText('');
+        
+        // Reset player direction to default
+        this.playerDirection = 'down';
         
         // Reset player position
         this.movePlayerTo(this.currentLevel.playerStart.x, this.currentLevel.playerStart.y);
@@ -656,9 +779,18 @@ export class GameScene extends Phaser.Scene {
     private movePlayerTo(x: number, y: number) {
         this.player.setData('gridX', x);
         this.player.setData('gridY', y);
-        this.player.setPosition(
-            this.OFFSET_X + x * this.GRID_SIZE + this.GRID_SIZE / 2,
-            this.OFFSET_Y + y * this.GRID_SIZE + this.GRID_SIZE / 2
-        );
+        
+        // Animate player movement
+        this.tweens.add({
+            targets: this.player,
+            x: this.OFFSET_X + x * this.GRID_SIZE + this.GRID_SIZE / 2,
+            y: this.OFFSET_Y + y * this.GRID_SIZE + this.GRID_SIZE / 2,
+            duration: 200,
+            ease: 'Power2',
+            onComplete: () => {
+                // Return to idle animation but keep facing the same direction
+                this.player.play(`player-idle-${this.playerDirection}`);
+            }
+        });
     }
 }
