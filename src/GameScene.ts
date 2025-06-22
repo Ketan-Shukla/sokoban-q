@@ -23,7 +23,6 @@ export class GameScene extends Phaser.Scene {
     private OFFSET_Y = 150; // Will be calculated for centering
     
     // Touch controls
-    private touchButtons: { [key: string]: Phaser.GameObjects.Graphics } = {};
     private isMobile = false;
     
     // Game state
@@ -101,25 +100,12 @@ export class GameScene extends Phaser.Scene {
         // Create player
         this.createPlayer();
         
-        // Recreate touch controls for mobile after level change
-        if (this.isMobile) {
-            this.clearTouchButtons();
-            this.createTouchButtons();
-        }
+        // Touch controls are gesture-based only, no buttons to recreate
         
         // Update UI (only if UI elements exist)
         if (this.levelText) {
             this.updateUI();
         }
-    }
-
-    private clearTouchButtons() {
-        Object.values(this.touchButtons).forEach(button => {
-            if (button && button.destroy) {
-                button.destroy();
-            }
-        });
-        this.touchButtons = {};
     }
 
     private calculateCenteredOffsets() {
@@ -157,10 +143,7 @@ export class GameScene extends Phaser.Scene {
         // Clear win text
         if (this.winText) this.winText.setText('');
         
-        // Clear touch buttons if they exist
-        if (this.isMobile) {
-            this.clearTouchButtons();
-        }
+        // No touch buttons to clear - using gestures only
     }
 
     private createGrid() {
@@ -305,19 +288,25 @@ export class GameScene extends Phaser.Scene {
         }).setOrigin(0.5);
         
         // Add instructions at the bottom (responsive positioning)
-        const instructionY = gameHeight - (isMobile ? 120 : 110); // More space for touch buttons
-        const instructionFontSize = isMobile ? '12px' : '16px';
-        const instructionSpacing = isMobile ? 15 : 25;
+        const instructionY = gameHeight - (isMobile ? 80 : 110); // Less space needed without buttons
+        const instructionFontSize = isMobile ? '14px' : '16px';
+        const instructionSpacing = isMobile ? 18 : 25;
         
         if (isMobile) {
-            this.add.text(centerX, instructionY, 'Swipe or Use Touch Buttons to Move', {
+            this.add.text(centerX, instructionY, 'Swipe to Move', {
                 fontSize: instructionFontSize,
-                color: '#CCCCCC'
+                color: '#CCCCCC',
+                fontStyle: 'bold'
             }).setOrigin(0.5);
             
             this.add.text(centerX, instructionY + instructionSpacing, 'Push crates onto targets to win!', {
-                fontSize: '10px',
+                fontSize: '12px',
                 color: '#AAAAAA'
+            }).setOrigin(0.5);
+            
+            this.add.text(centerX, instructionY + instructionSpacing * 2, '↑ ↓ ← → Swipe in any direction', {
+                fontSize: '10px',
+                color: '#888888'
             }).setOrigin(0.5);
         } else {
             this.add.text(centerX, instructionY, 'Use Arrow Keys to Move', {
@@ -366,11 +355,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     private setupTouchControls() {
-        // Setup swipe gestures
+        // Setup swipe gestures only
         this.setupSwipeGestures();
         
-        // Setup on-screen directional buttons
-        this.createTouchButtons();
+        // Remove on-screen directional buttons - only use swipe
+        // this.createTouchButtons(); // Disabled
     }
 
     private setupSwipeGestures() {

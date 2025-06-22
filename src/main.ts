@@ -50,11 +50,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <p>📱 <strong>Mobile Experience:</strong></p>
         <ul>
           <li>Full-screen game view on mobile devices</li>
-          <li>Swipe gestures for movement (up, down, left, right)</li>
-          <li>On-screen touch buttons for precise control</li>
-          <li>Optimized touch controls and interface</li>
+          <li>Intuitive swipe gestures for movement (up, down, left, right)</li>
+          <li>Clean interface without on-screen buttons</li>
+          <li>Natural touch-based gameplay</li>
           <li>Maximum screen space utilization</li>
-          <li>Distraction-free gaming</li>
+          <li>Distraction-free gaming experience</li>
         </ul>
       </div>
     </div>
