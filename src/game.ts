@@ -6,9 +6,9 @@ function getGameDimensions() {
   const isMobile = window.innerWidth <= 768;
   
   if (isMobile) {
-    // Mobile: Use smaller dimensions that fit better on mobile screens
-    const maxWidth = Math.min(window.innerWidth - 40, 480);
-    const maxHeight = Math.min(window.innerHeight * 0.6, 720); // 60% of screen height
+    // Mobile: Use maximum available screen space
+    const maxWidth = Math.min(window.innerWidth - 20, 500);
+    const maxHeight = Math.min(window.innerHeight - 20, 900); // Use most of screen height
     return {
       width: maxWidth,
       height: maxHeight

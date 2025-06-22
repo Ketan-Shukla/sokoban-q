@@ -44,7 +44,7 @@ body {
   order: 1;
 }
 
-/* Mobile Layout */
+/* Mobile Layout - Game Only */
 .mobile-layout {
   display: flex;
   flex-direction: column;
@@ -56,7 +56,7 @@ body {
 }
 
 .mobile-layout .description-section {
-  order: 2;
+  display: none; /* Hide description completely on mobile */
 }
 
 h1 {
@@ -119,37 +119,57 @@ h3 {
 /* Mobile-specific styles */
 @media (max-width: 768px) {
   body {
-    padding: 0.5rem;
+    padding: 0.25rem; /* Minimal padding for more game space */
+    /* Prevent scrolling and zooming on mobile */
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
   }
   
   #app {
-    padding: 0.5rem;
+    padding: 0.25rem;
     max-width: 100%;
+    height: 100vh;
+    overflow: hidden;
   }
   
-  h1 {
-    font-size: 1.8em;
-    margin-bottom: 0.5rem;
+  /* Mobile layout adjustments - focus on game only */
+  .mobile-layout {
+    justify-content: center;
+    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
   
-  .instructions {
-    padding: 1rem;
-    font-size: 0.9rem;
-    margin: 1rem 0;
+  .mobile-layout .game-section {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   #game-container {
-    margin: 1rem auto;
+    margin: 0.5rem auto;
     border-width: 2px;
+    max-width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+    /* Prevent text selection on touch */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Prevent touch callouts */
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
   
-  /* Mobile layout adjustments */
-  .mobile-layout .description-section {
-    margin-top: 1rem;
-  }
-  
-  .mobile-layout .instructions {
-    margin-top: 1.5rem;
+  /* Prevent scrolling and bouncing on iOS */
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
   }
 }
 

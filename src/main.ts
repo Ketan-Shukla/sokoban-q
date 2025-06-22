@@ -37,7 +37,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <li>Consistent visual design with high-quality sprites</li>
           <li>Perfectly centered levels on all screen sizes</li>
           <li>3 carefully designed, solvable puzzle levels</li>
-          <li>Responsive design for mobile and desktop</li>
+          <li>Mobile-optimized: Game-only view on mobile devices</li>
           <li>Progress tracking with auto-save</li>
         </ul>
         <p>🎨 <strong>Visual Design:</strong></p>
@@ -46,6 +46,15 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <li>Automatic level centering</li>
           <li>Touch-friendly interface</li>
           <li>Professional game presentation</li>
+        </ul>
+        <p>📱 <strong>Mobile Experience:</strong></p>
+        <ul>
+          <li>Full-screen game view on mobile devices</li>
+          <li>Swipe gestures for movement (up, down, left, right)</li>
+          <li>On-screen touch buttons for precise control</li>
+          <li>Optimized touch controls and interface</li>
+          <li>Maximum screen space utilization</li>
+          <li>Distraction-free gaming</li>
         </ul>
       </div>
     </div>

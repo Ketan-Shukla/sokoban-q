@@ -22,6 +22,10 @@ export class GameScene extends Phaser.Scene {
     private OFFSET_X = 50; // Will be calculated for centering
     private OFFSET_Y = 150; // Will be calculated for centering
     
+    // Touch controls
+    private touchButtons: { [key: string]: Phaser.GameObjects.Graphics } = {};
+    private isMobile = false;
+    
     // Game state
     private gameWon = false;
     private levelManager: LevelManager;
@@ -54,6 +58,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
+        // Detect if mobile device
+        this.isMobile = this.scale.width <= 500;
+        
         // Load current level
         this.loadCurrentLevel();
         
@@ -62,6 +69,11 @@ export class GameScene extends Phaser.Scene {
         
         // Setup input handlers
         this.setupInputHandlers();
+        
+        // Setup touch controls for mobile
+        if (this.isMobile) {
+            this.setupTouchControls();
+        }
     }
 
     private loadCurrentLevel() {
@@ -89,10 +101,25 @@ export class GameScene extends Phaser.Scene {
         // Create player
         this.createPlayer();
         
+        // Recreate touch controls for mobile after level change
+        if (this.isMobile) {
+            this.clearTouchButtons();
+            this.createTouchButtons();
+        }
+        
         // Update UI (only if UI elements exist)
         if (this.levelText) {
             this.updateUI();
         }
+    }
+
+    private clearTouchButtons() {
+        Object.values(this.touchButtons).forEach(button => {
+            if (button && button.destroy) {
+                button.destroy();
+            }
+        });
+        this.touchButtons = {};
     }
 
     private calculateCenteredOffsets() {
@@ -129,6 +156,11 @@ export class GameScene extends Phaser.Scene {
         
         // Clear win text
         if (this.winText) this.winText.setText('');
+        
+        // Clear touch buttons if they exist
+        if (this.isMobile) {
+            this.clearTouchButtons();
+        }
     }
 
     private createGrid() {
@@ -273,24 +305,36 @@ export class GameScene extends Phaser.Scene {
         }).setOrigin(0.5);
         
         // Add instructions at the bottom (responsive positioning)
-        const instructionY = gameHeight - (isMobile ? 80 : 110);
+        const instructionY = gameHeight - (isMobile ? 120 : 110); // More space for touch buttons
         const instructionFontSize = isMobile ? '12px' : '16px';
         const instructionSpacing = isMobile ? 15 : 25;
         
-        this.add.text(centerX, instructionY, 'Use Arrow Keys to Move', {
-            fontSize: instructionFontSize,
-            color: '#CCCCCC'
-        }).setOrigin(0.5);
-        
-        this.add.text(centerX, instructionY + instructionSpacing, 'Push crates onto targets to win!', {
-            fontSize: isMobile ? '10px' : '14px',
-            color: '#AAAAAA'
-        }).setOrigin(0.5);
-        
-        this.add.text(centerX, instructionY + instructionSpacing * 2, 'R: Reset | N: Next | P: Previous', {
-            fontSize: isMobile ? '9px' : '12px',
-            color: '#888888'
-        }).setOrigin(0.5);
+        if (isMobile) {
+            this.add.text(centerX, instructionY, 'Swipe or Use Touch Buttons to Move', {
+                fontSize: instructionFontSize,
+                color: '#CCCCCC'
+            }).setOrigin(0.5);
+            
+            this.add.text(centerX, instructionY + instructionSpacing, 'Push crates onto targets to win!', {
+                fontSize: '10px',
+                color: '#AAAAAA'
+            }).setOrigin(0.5);
+        } else {
+            this.add.text(centerX, instructionY, 'Use Arrow Keys to Move', {
+                fontSize: instructionFontSize,
+                color: '#CCCCCC'
+            }).setOrigin(0.5);
+            
+            this.add.text(centerX, instructionY + instructionSpacing, 'Push crates onto targets to win!', {
+                fontSize: '14px',
+                color: '#AAAAAA'
+            }).setOrigin(0.5);
+            
+            this.add.text(centerX, instructionY + instructionSpacing * 2, 'R: Reset | N: Next | P: Previous', {
+                fontSize: '12px',
+                color: '#888888'
+            }).setOrigin(0.5);
+        }
         
         // Update UI now that all elements are created
         this.updateUI();
@@ -319,6 +363,118 @@ export class GameScene extends Phaser.Scene {
         this.input.keyboard!.on('keydown-R', () => this.resetLevel());
         this.input.keyboard!.on('keydown-N', () => this.goToNextLevel());
         this.input.keyboard!.on('keydown-P', () => this.goToPreviousLevel());
+    }
+
+    private setupTouchControls() {
+        // Setup swipe gestures
+        this.setupSwipeGestures();
+        
+        // Setup on-screen directional buttons
+        this.createTouchButtons();
+    }
+
+    private setupSwipeGestures() {
+        let startX = 0;
+        let startY = 0;
+        const minSwipeDistance = 50;
+
+        this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            startX = pointer.x;
+            startY = pointer.y;
+        });
+
+        this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+            const deltaX = pointer.x - startX;
+            const deltaY = pointer.y - startY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            if (distance < minSwipeDistance) return;
+
+            // Determine swipe direction
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Horizontal swipe
+                if (deltaX > 0) {
+                    this.movePlayer(1, 0); // Right
+                } else {
+                    this.movePlayer(-1, 0); // Left
+                }
+            } else {
+                // Vertical swipe
+                if (deltaY > 0) {
+                    this.movePlayer(0, 1); // Down
+                } else {
+                    this.movePlayer(0, -1); // Up
+                }
+            }
+        });
+    }
+
+    private createTouchButtons() {
+        const gameWidth = this.scale.width;
+        const gameHeight = this.scale.height;
+        const buttonSize = 60;
+        const buttonAlpha = 0.7;
+        const buttonColor = 0x646cff;
+        const buttonPadding = 20;
+
+        // Position buttons in bottom corners
+        const leftX = buttonPadding + buttonSize / 2;
+        const rightX = gameWidth - buttonPadding - buttonSize / 2;
+        const bottomY = gameHeight - buttonPadding - buttonSize / 2;
+        const topY = gameHeight - buttonPadding - buttonSize * 2.5;
+
+        // Create directional buttons
+        this.createTouchButton('left', leftX, bottomY, buttonSize, buttonColor, buttonAlpha, '←', () => this.movePlayer(-1, 0));
+        this.createTouchButton('right', rightX, bottomY, buttonSize, buttonColor, buttonAlpha, '→', () => this.movePlayer(1, 0));
+        this.createTouchButton('up', rightX, topY, buttonSize, buttonColor, buttonAlpha, '↑', () => this.movePlayer(0, -1));
+        this.createTouchButton('down', leftX, topY, buttonSize, buttonColor, buttonAlpha, '↓', () => this.movePlayer(0, 1));
+
+        // Create reset button in center bottom
+        const centerX = gameWidth / 2;
+        this.createTouchButton('reset', centerX, bottomY, buttonSize * 1.2, 0xff6b6b, buttonAlpha, 'R', () => this.resetLevel());
+    }
+
+    private createTouchButton(
+        key: string, 
+        x: number, 
+        y: number, 
+        size: number, 
+        color: number, 
+        alpha: number, 
+        text: string, 
+        callback: () => void
+    ) {
+        // Create button background
+        const button = this.add.graphics();
+        button.fillStyle(color, alpha);
+        button.fillCircle(0, 0, size / 2);
+        button.setPosition(x, y);
+        button.setInteractive(new Phaser.Geom.Circle(0, 0, size / 2), Phaser.Geom.Circle.Contains);
+
+        // Add button text
+        const buttonText = this.add.text(x, y, text, {
+            fontSize: `${size / 2}px`,
+            color: '#FFFFFF',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        // Button interactions
+        button.on('pointerdown', () => {
+            button.setScale(0.9);
+            callback();
+        });
+
+        button.on('pointerup', () => {
+            button.setScale(1);
+        });
+
+        button.on('pointerout', () => {
+            button.setScale(1);
+        });
+
+        // Store references
+        this.touchButtons[key] = button;
+        this.touchButtons[key + '_text'] = buttonText as any;
     }
 
     private movePlayer(deltaX: number, deltaY: number) {
