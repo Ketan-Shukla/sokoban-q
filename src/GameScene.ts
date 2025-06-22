@@ -30,6 +30,8 @@ export class GameScene extends Phaser.Scene {
     
     // Game state
     private gameWon = false;
+    private gameLost = false;
+    private moveCount = 0;
     private levelManager: LevelManager;
     private currentLevel!: LevelData;
     private isLevelLoaded = false;
@@ -62,6 +64,14 @@ export class GameScene extends Phaser.Scene {
         this.load.image('player_right', 'sprites/players/player_11.png');  // Right facing
         this.load.image('player_right1', 'sprites/players/player_12.png');  // Right facing
         this.load.image('player_right2', 'sprites/players/player_13.png');  // Right facing
+        
+        // Load UI assets for win/lose screens
+        this.load.image('button_green', 'sprites/menu button ui/button_rectangle_depth_gradient.png');
+        this.load.image('button_red', 'sprites/menu button ui/button_rectangle_depth_border.png');
+        this.load.image('button_blue', 'sprites/menu button ui/button_rectangle_depth_gloss.png');
+        this.load.image('star', 'sprites/menu button ui/star.png');
+        this.load.image('checkmark', 'sprites/menu button ui/icon_checkmark.png');
+        this.load.image('cross', 'sprites/menu button ui/icon_cross.png');
         
         // Handle loading errors gracefully
         this.load.on('loaderror', (file: any) => {
@@ -182,6 +192,8 @@ export class GameScene extends Phaser.Scene {
     private loadCurrentLevel() {
         this.currentLevel = this.levelManager.getCurrentLevel();
         this.gameWon = false;
+        this.gameLost = false;
+        this.moveCount = 0;
         
         // Calculate centered positioning
         this.calculateCenteredOffsets();
@@ -525,7 +537,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     private movePlayer(deltaX: number, deltaY: number) {
-        if (this.gameWon) return;
+        if (this.gameWon || this.gameLost) return;
         
         const currentX = this.player.getData('gridX');
         const currentY = this.player.getData('gridY');
@@ -542,6 +554,8 @@ export class GameScene extends Phaser.Scene {
         if (!this.isValidPosition(newX, newY)) {
             // Even if can't move, update facing direction
             this.player.play(`player-idle-${this.playerDirection}`);
+            // Check if player is stuck after failed move
+            this.checkIfPlayerStuck();
             return;
         }
         
@@ -562,16 +576,81 @@ export class GameScene extends Phaser.Scene {
                 this.moveCrate(crateAtNewPos, crateNewX, crateNewY);
                 // Move the player
                 this.movePlayerTo(newX, newY);
+                // Increment move count
+                this.moveCount++;
                 // Check win condition
                 this.checkWinCondition();
             } else {
                 // Can't push crate, but still face that direction
                 this.player.play(`player-idle-${this.playerDirection}`);
+                // Check if player is stuck
+                this.checkIfPlayerStuck();
             }
         } else if (this.canMoveTo(newX, newY)) {
             // Move the player
             this.movePlayerTo(newX, newY);
+            // Increment move count
+            this.moveCount++;
+            // Check if player is stuck after move
+            this.checkIfPlayerStuck();
         }
+    }
+
+    private checkIfPlayerStuck() {
+        // Don't check if game is already won or lost
+        if (this.gameWon || this.gameLost) return;
+        
+        const playerX = this.player.getData('gridX');
+        const playerY = this.player.getData('gridY');
+        
+        // Check all four directions
+        const directions = [
+            { x: 0, y: -1 }, // up
+            { x: 0, y: 1 },  // down
+            { x: -1, y: 0 }, // left
+            { x: 1, y: 0 }   // right
+        ];
+        
+        let canMove = false;
+        
+        for (const dir of directions) {
+            const newX = playerX + dir.x;
+            const newY = playerY + dir.y;
+            
+            // Check if can move to this position
+            if (this.isValidPosition(newX, newY)) {
+                const crateAtPos = this.getCrateAt(newX, newY);
+                if (!crateAtPos) {
+                    // Can move freely
+                    canMove = true;
+                    break;
+                } else {
+                    // Check if can push crate
+                    const crateNewX = newX + dir.x;
+                    const crateNewY = newY + dir.y;
+                    if (this.canMoveTo(crateNewX, crateNewY)) {
+                        canMove = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // If no moves available and game not won, show lose screen
+        if (!canMove && !this.areAllCratesOnTargets()) {
+            this.gameLost = true;
+            this.showLoseScreen();
+        }
+    }
+
+    private areAllCratesOnTargets(): boolean {
+        return this.crates.every(crate => {
+            const crateX = crate.getData('gridX');
+            const crateY = crate.getData('gridY');
+            return this.targets.some(target => 
+                target.getData('gridX') === crateX && target.getData('gridY') === crateY
+            );
+        });
     }
     
     private isValidPosition(x: number, y: number): boolean {
@@ -617,44 +696,185 @@ export class GameScene extends Phaser.Scene {
     }
 
     private checkWinCondition() {
-        const allCratesOnTargets = this.crates.every(crate => {
-            const crateX = crate.getData('gridX');
-            const crateY = crate.getData('gridY');
-            return this.targets.some(target => 
-                target.getData('gridX') === crateX && target.getData('gridY') === crateY
-            );
-        });
+        const allCratesOnTargets = this.areAllCratesOnTargets();
         
         if (allCratesOnTargets && !this.gameWon) {
             this.gameWon = true;
             this.levelManager.completeCurrentLevel();
-            
-            const isLastLevel = !this.levelManager.canAdvanceToNextLevel();
-            const isMobile = this.scale.width <= 500;
-            
-            if (isLastLevel) {
-                if (isMobile) {
-                    this.winText.setText('🎉 All Levels Complete! 🎉\nCongratulations!');
-                } else {
-                    this.winText.setText('🎉 Congratulations!\nYou completed all levels! 🎉');
-                }
-            } else {
-                if (isMobile) {
-                    this.winText.setText('🎉 Level Complete! 🎉\nSwipe or press N for next');
-                } else {
-                    this.winText.setText('🎉 Level Complete!\nPress N for next level 🎉');
-                }
-            }
-            
-            // Text is already centered with setOrigin(0.5) - no manual positioning needed
-            // The text will automatically center itself at the position set in createUI()
-            
-            this.updateUI();
+            this.showWinScreen();
         }
+    }
+
+    private showWinScreen() {
+        const gameWidth = this.scale.width;
+        const gameHeight = this.scale.height;
+        const isMobile = gameWidth < 500;
+        
+        // Account for camera zoom on desktop
+        const zoom = this.cameras.main.zoom || 1;
+        const effectiveGameWidth = isMobile ? gameWidth : gameWidth / zoom;
+        const effectiveGameHeight = isMobile ? gameHeight : gameHeight / zoom;
+        const centerX = effectiveGameWidth / 2;
+        const centerY = effectiveGameHeight / 2;
+        
+        // Create semi-transparent overlay
+        const overlay = this.add.rectangle(centerX, centerY, effectiveGameWidth, effectiveGameHeight, 0x000000, 0.8);
+        
+        // Create win panel background with border effect
+        const panelWidth = Math.min(effectiveGameWidth * 0.8, isMobile ? 300 : 400);
+        const panelHeight = Math.min(effectiveGameHeight * 0.6, isMobile ? 250 : 300);
+        
+        // Panel border (larger rectangle)
+        const panelBorder = this.add.rectangle(centerX, centerY, panelWidth + 8, panelHeight + 8, 0x3498db, 1);
+        // Panel background
+        const panel = this.add.rectangle(centerX, centerY, panelWidth, panelHeight, 0x2c3e50, 1);
+        
+        // Add stars for decoration
+        const star1 = this.add.image(centerX - 60, centerY - 80, 'star').setScale(0.3);
+        const star2 = this.add.image(centerX, centerY - 90, 'star').setScale(0.4);
+        const star3 = this.add.image(centerX + 60, centerY - 80, 'star').setScale(0.3);
+        
+        // Win title
+        const title = this.add.text(centerX, centerY - 50, 'LEVEL COMPLETE!', {
+            fontSize: isMobile ? '24px' : '32px',
+            color: '#f1c40f',
+            fontStyle: 'bold',
+            stroke: '#2c3e50',
+            strokeThickness: 2
+        }).setOrigin(0.5);
+        
+        // Move count
+        const moveText = this.add.text(centerX, centerY - 10, `Moves: ${this.moveCount}`, {
+            fontSize: isMobile ? '16px' : '20px',
+            color: '#ecf0f1',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        
+        // Check if there's a next level
+        const hasNextLevel = this.levelManager.canAdvanceToNextLevel();
+        
+        if (hasNextLevel) {
+            // Next Level Button
+            const nextButton = this.add.image(centerX, centerY + 40, 'button_green').setScale(0.8);
+            const nextText = this.add.text(centerX, centerY + 40, 'NEXT LEVEL', {
+                fontSize: isMobile ? '14px' : '16px',
+                color: '#ffffff',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+            
+            nextButton.setInteractive();
+            nextButton.on('pointerdown', () => {
+                // Clean up win screen
+                overlay.destroy();
+                panelBorder.destroy();
+                panel.destroy();
+                star1.destroy();
+                star2.destroy();
+                star3.destroy();
+                title.destroy();
+                moveText.destroy();
+                nextButton.destroy();
+                nextText.destroy();
+                
+                // Go to next level
+                this.levelManager.advanceToNextLevel();
+                this.loadCurrentLevel();
+            });
+            
+            nextButton.on('pointerover', () => nextButton.setScale(0.85));
+            nextButton.on('pointerout', () => nextButton.setScale(0.8));
+        } else {
+            // All levels complete message
+            const completeText = this.add.text(centerX, centerY + 20, 'ALL LEVELS COMPLETE!', {
+                fontSize: isMobile ? '18px' : '24px',
+                color: '#e74c3c',
+                fontStyle: 'bold',
+                stroke: '#2c3e50',
+                strokeThickness: 2
+            }).setOrigin(0.5);
+            
+            const congratsText = this.add.text(centerX, centerY + 50, 'Congratulations!', {
+                fontSize: isMobile ? '14px' : '18px',
+                color: '#ecf0f1'
+            }).setOrigin(0.5);
+        }
+    }
+
+    private showLoseScreen() {
+        const gameWidth = this.scale.width;
+        const gameHeight = this.scale.height;
+        const isMobile = gameWidth < 500;
+        
+        // Account for camera zoom on desktop
+        const zoom = this.cameras.main.zoom || 1;
+        const effectiveGameWidth = isMobile ? gameWidth : gameWidth / zoom;
+        const effectiveGameHeight = isMobile ? gameHeight : gameHeight / zoom;
+        const centerX = effectiveGameWidth / 2;
+        const centerY = effectiveGameHeight / 2;
+        
+        // Create semi-transparent overlay
+        const overlay = this.add.rectangle(centerX, centerY, effectiveGameWidth, effectiveGameHeight, 0x000000, 0.8);
+        
+        // Create lose panel background with border effect
+        const panelWidth = Math.min(effectiveGameWidth * 0.8, isMobile ? 300 : 400);
+        const panelHeight = Math.min(effectiveGameHeight * 0.6, isMobile ? 200 : 250);
+        
+        // Panel border (larger rectangle)
+        const panelBorder = this.add.rectangle(centerX, centerY, panelWidth + 8, panelHeight + 8, 0xe74c3c, 1);
+        // Panel background
+        const panel = this.add.rectangle(centerX, centerY, panelWidth, panelHeight, 0x2c3e50, 1);
+        
+        // Add cross icon
+        const crossIcon = this.add.image(centerX, centerY - 60, 'cross').setScale(0.8);
+        crossIcon.setTint(0xe74c3c);
+        
+        // Lose title
+        const title = this.add.text(centerX, centerY - 20, 'NO MOVES LEFT!', {
+            fontSize: isMobile ? '20px' : '28px',
+            color: '#e74c3c',
+            fontStyle: 'bold',
+            stroke: '#2c3e50',
+            strokeThickness: 2
+        }).setOrigin(0.5);
+        
+        // Subtitle
+        const subtitle = this.add.text(centerX, centerY + 10, 'Try again?', {
+            fontSize: isMobile ? '14px' : '18px',
+            color: '#ecf0f1'
+        }).setOrigin(0.5);
+        
+        // Retry Button
+        const retryButton = this.add.image(centerX, centerY + 50, 'button_red').setScale(0.8);
+        const retryText = this.add.text(centerX, centerY + 50, 'RETRY LEVEL', {
+            fontSize: isMobile ? '14px' : '16px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        
+        retryButton.setInteractive();
+        retryButton.on('pointerdown', () => {
+            // Clean up lose screen
+            overlay.destroy();
+            panelBorder.destroy();
+            panel.destroy();
+            crossIcon.destroy();
+            title.destroy();
+            subtitle.destroy();
+            retryButton.destroy();
+            retryText.destroy();
+            
+            // Reset the level
+            this.resetLevel();
+        });
+        
+        retryButton.on('pointerover', () => retryButton.setScale(0.85));
+        retryButton.on('pointerout', () => retryButton.setScale(0.8));
     }
 
     private resetLevel() {
         this.gameWon = false;
+        this.gameLost = false;
+        this.moveCount = 0;
         this.winText.setText('');
         
         // Reset player direction to default
