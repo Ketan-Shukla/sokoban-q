@@ -6,18 +6,18 @@ function getGameDimensions() {
   const isMobile = window.innerWidth <= 768;
   
   if (isMobile) {
-    // Mobile: Use maximum available screen space
-    const maxWidth = Math.min(window.innerWidth - 20, 500);
-    const maxHeight = Math.min(window.innerHeight - 20, 900); // Use most of screen height
+    // Mobile: Use maximum available screen space with no gaps
+    const maxWidth = window.innerWidth;
+    const maxHeight = window.innerHeight;
     return {
       width: maxWidth,
       height: maxHeight
     };
   } else {
-    // Desktop: Use original portrait dimensions
+    // Desktop: Use specified portrait dimensions
     return {
-      width: 640,
-      height: 960
+      width: 430,
+      height: 932
     };
   }
 }

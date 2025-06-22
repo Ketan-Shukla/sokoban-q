@@ -22,7 +22,8 @@ function updateLayout() {
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="desktop-layout">
     <div class="description-section">
-      <h1>Sokoban - Clean & Centered</h1>
+    <br>
+      <h1>Sokoban</h1>
       <div class="instructions">
         <h3>🎯 Classic Sokoban Puzzle Game</h3>
         <p>🎮 <strong>Goal:</strong> Push all crates onto targets to complete each level</p>
@@ -37,7 +38,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <li>Consistent visual design with high-quality sprites</li>
           <li>Perfectly centered levels on all screen sizes</li>
           <li>3 carefully designed, solvable puzzle levels</li>
-          <li>Mobile-optimized: Game-only view on mobile devices</li>
+          <li>Mobile-optimized</li>
           <li>Progress tracking with auto-save</li>
         </ul>
         <p>🎨 <strong>Visual Design:</strong></p>
@@ -46,15 +47,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
           <li>Automatic level centering</li>
           <li>Touch-friendly interface</li>
           <li>Professional game presentation</li>
-        </ul>
-        <p>📱 <strong>Mobile Experience:</strong></p>
-        <ul>
-          <li>Full-screen game view on mobile devices</li>
-          <li>Intuitive swipe gestures for movement (up, down, left, right)</li>
-          <li>Clean interface without on-screen buttons</li>
-          <li>Natural touch-based gameplay</li>
-          <li>Maximum screen space utilization</li>
-          <li>Distraction-free gaming experience</li>
         </ul>
       </div>
     </div>

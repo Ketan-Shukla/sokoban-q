@@ -119,17 +119,19 @@ h3 {
 /* Mobile-specific styles */
 @media (max-width: 768px) {
   body {
-    padding: 0.25rem; /* Minimal padding for more game space */
+    padding: 0; /* Remove all padding for full screen */
+    margin: 0; /* Remove all margin */
     /* Prevent scrolling and zooming on mobile */
     overflow: hidden;
     position: fixed;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
   }
   
   #app {
-    padding: 0.25rem;
-    max-width: 100%;
+    padding: 0; /* Remove all padding */
+    margin: 0; /* Remove all margin */
+    width: 100vw;
     height: 100vh;
     overflow: hidden;
   }
@@ -137,25 +139,33 @@ h3 {
   /* Mobile layout adjustments - focus on game only */
   .mobile-layout {
     justify-content: center;
-    min-height: 100vh;
+    align-items: center;
+    width: 100vw;
     height: 100vh;
     overflow: hidden;
+    margin: 0;
+    padding: 0;
   }
   
   .mobile-layout .game-section {
     margin: 0;
     padding: 0;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   
   #game-container {
-    margin: 0.5rem auto;
-    border-width: 2px;
-    max-width: calc(100vw - 1rem);
-    max-height: calc(100vh - 1rem);
+    margin: 0; /* Remove all margins */
+    padding: 0; /* Remove all padding */
+    border: none; /* Remove border to eliminate gaps */
+    border-radius: 0; /* Remove border radius */
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
     /* Prevent text selection on touch */
     -webkit-user-select: none;
     -moz-user-select: none;

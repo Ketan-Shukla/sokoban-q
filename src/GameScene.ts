@@ -60,6 +60,11 @@ export class GameScene extends Phaser.Scene {
         // Detect if mobile device
         this.isMobile = this.scale.width <= 500;
         
+        // Set camera zoom for desktop to make levels appear larger
+        if (!this.isMobile) {
+            this.cameras.main.setZoom(1.4); // Zoom in on desktop for larger appearance
+        }
+        
         // Load current level
         this.loadCurrentLevel();
         
@@ -117,14 +122,30 @@ export class GameScene extends Phaser.Scene {
         const levelWidth = this.currentLevel.width * this.GRID_SIZE;
         const levelHeight = this.currentLevel.height * this.GRID_SIZE;
         
-        // Center horizontally
-        this.OFFSET_X = (gameWidth - levelWidth) / 2;
-        
-        // Position vertically with space for UI at top and bottom
-        const uiSpaceTop = gameHeight < 600 ? 100 : 150; // Less space on smaller screens
-        const uiSpaceBottom = gameHeight < 600 ? 50 : 100;
-        const availableHeight = gameHeight - uiSpaceTop - uiSpaceBottom;
-        this.OFFSET_Y = uiSpaceTop + Math.max(0, (availableHeight - levelHeight) / 2);
+        if (this.isMobile) {
+            // Mobile: Center normally
+            this.OFFSET_X = (gameWidth - levelWidth) / 2;
+            
+            // Position vertically with space for UI at top and bottom
+            const uiSpaceTop = 100;
+            const uiSpaceBottom = 80;
+            const availableHeight = gameHeight - uiSpaceTop - uiSpaceBottom;
+            this.OFFSET_Y = uiSpaceTop + Math.max(0, (availableHeight - levelHeight) / 2);
+        } else {
+            // Desktop: Account for camera zoom when centering
+            const zoom = this.cameras.main.zoom;
+            const effectiveGameWidth = gameWidth / zoom;
+            const effectiveGameHeight = gameHeight / zoom;
+            
+            // Center horizontally
+            this.OFFSET_X = (effectiveGameWidth - levelWidth) / 2;
+            
+            // Position vertically with space for UI
+            const uiSpaceTop = 120 / zoom; // Adjust UI space for zoom
+            const uiSpaceBottom = 100 / zoom;
+            const availableHeight = effectiveGameHeight - uiSpaceTop - uiSpaceBottom;
+            this.OFFSET_Y = uiSpaceTop + Math.max(0, (availableHeight - levelHeight) / 2);
+        }
     }
      
 
@@ -223,27 +244,32 @@ export class GameScene extends Phaser.Scene {
         const centerX = gameWidth / 2;
         const isMobile = gameWidth < 500;
         
+        // Account for camera zoom on desktop
+        const zoom = this.cameras.main.zoom;
+        const effectiveCenterX = isMobile ? centerX : centerX / zoom;
+        const effectiveGameHeight = isMobile ? gameHeight : gameHeight / zoom;
+        
         // Level info - centered at top
-        this.levelText = this.add.text(centerX, 30, '', {
-            fontSize: isMobile ? '20px' : '24px',
+        this.levelText = this.add.text(effectiveCenterX, isMobile ? 30 : 25, '', {
+            fontSize: isMobile ? '20px' : '18px',
             color: '#FFFFFF',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
-        this.progressText = this.add.text(centerX, isMobile ? 55 : 60, '', {
-            fontSize: isMobile ? '14px' : '16px',
+        this.progressText = this.add.text(effectiveCenterX, isMobile ? 55 : 50, '', {
+            fontSize: isMobile ? '14px' : '14px',
             color: '#CCCCCC'
         }).setOrigin(0.5);
         
         // Control buttons - arranged in two rows for portrait layout
-        const buttonY1 = isMobile ? 80 : 90;
-        const buttonY2 = isMobile ? 105 : 125;
-        const buttonSpacing = isMobile ? 140 : 160;
-        const fontSize = isMobile ? '12px' : '14px';
-        const padding = isMobile ? { x: 6, y: 3 } : { x: 8, y: 4 };
+        const buttonY1 = isMobile ? 80 : 75;
+        const buttonY2 = isMobile ? 105 : 100;
+        const buttonSpacing = isMobile ? 140 : 120;
+        const fontSize = isMobile ? '12px' : '11px';
+        const padding = isMobile ? { x: 6, y: 3 } : { x: 6, y: 3 };
         
         // Top row buttons
-        this.resetButton = this.add.text(centerX - buttonSpacing/2, buttonY1, 'Reset Level (R)', {
+        this.resetButton = this.add.text(effectiveCenterX - buttonSpacing/2, buttonY1, 'Reset Level (R)', {
             fontSize: fontSize,
             color: '#000000',
             backgroundColor: '#FFFFFF',
@@ -252,7 +278,7 @@ export class GameScene extends Phaser.Scene {
         this.resetButton.setInteractive();
         this.resetButton.on('pointerdown', () => this.resetLevel());
         
-        this.levelSelectButton = this.add.text(centerX + buttonSpacing/2, buttonY1, 'Level Select', {
+        this.levelSelectButton = this.add.text(effectiveCenterX + buttonSpacing/2, buttonY1, 'Level Select', {
             fontSize: fontSize,
             color: '#000000',
             backgroundColor: '#CC00CC',
@@ -262,7 +288,7 @@ export class GameScene extends Phaser.Scene {
         this.levelSelectButton.on('pointerdown', () => this.showLevelSelect());
         
         // Bottom row buttons
-        this.prevLevelButton = this.add.text(centerX - buttonSpacing/2, buttonY2, '← Previous Level', {
+        this.prevLevelButton = this.add.text(effectiveCenterX - buttonSpacing/2, buttonY2, '← Previous Level', {
             fontSize: fontSize,
             color: '#000000',
             backgroundColor: '#FFCC00',
@@ -271,7 +297,7 @@ export class GameScene extends Phaser.Scene {
         this.prevLevelButton.setInteractive();
         this.prevLevelButton.on('pointerdown', () => this.goToPreviousLevel());
         
-        this.nextLevelButton = this.add.text(centerX + buttonSpacing/2, buttonY2, 'Next Level →', {
+        this.nextLevelButton = this.add.text(effectiveCenterX + buttonSpacing/2, buttonY2, 'Next Level →', {
             fontSize: fontSize,
             color: '#000000',
             backgroundColor: '#00CC00',
@@ -281,46 +307,48 @@ export class GameScene extends Phaser.Scene {
         this.nextLevelButton.on('pointerdown', () => this.goToNextLevel());
         
         // Win text - centered in the middle of the screen
-        this.winText = this.add.text(centerX, gameHeight / 2, '', {
-            fontSize: isMobile ? '20px' : '24px',
+        this.winText = this.add.text(effectiveCenterX, effectiveGameHeight / 2, '', {
+            fontSize: isMobile ? '16px' : '18px',
             color: '#00FF00',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            align: 'center',
+            wordWrap: { width: (isMobile ? gameWidth : gameWidth / zoom) - 40, useAdvancedWrap: true }
         }).setOrigin(0.5);
         
         // Add instructions at the bottom (responsive positioning)
-        const instructionY = gameHeight - (isMobile ? 80 : 110); // Less space needed without buttons
-        const instructionFontSize = isMobile ? '14px' : '16px';
-        const instructionSpacing = isMobile ? 18 : 25;
+        const instructionY = effectiveGameHeight - (isMobile ? 80 : 70);
+        const instructionFontSize = isMobile ? '14px' : '12px';
+        const instructionSpacing = isMobile ? 18 : 15;
         
         if (isMobile) {
-            this.add.text(centerX, instructionY, 'Swipe to Move', {
+            this.add.text(effectiveCenterX, instructionY, 'Swipe to Move', {
                 fontSize: instructionFontSize,
                 color: '#CCCCCC',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
             
-            this.add.text(centerX, instructionY + instructionSpacing, 'Push crates onto targets to win!', {
+            this.add.text(effectiveCenterX, instructionY + instructionSpacing, 'Push crates onto targets to win!', {
                 fontSize: '12px',
                 color: '#AAAAAA'
             }).setOrigin(0.5);
             
-            this.add.text(centerX, instructionY + instructionSpacing * 2, '↑ ↓ ← → Swipe in any direction', {
+            this.add.text(effectiveCenterX, instructionY + instructionSpacing * 2, '↑ ↓ ← → Swipe in any direction', {
                 fontSize: '10px',
                 color: '#888888'
             }).setOrigin(0.5);
         } else {
-            this.add.text(centerX, instructionY, 'Use Arrow Keys to Move', {
+            this.add.text(effectiveCenterX, instructionY, 'Use Arrow Keys to Move', {
                 fontSize: instructionFontSize,
                 color: '#CCCCCC'
             }).setOrigin(0.5);
             
-            this.add.text(centerX, instructionY + instructionSpacing, 'Push crates onto targets to win!', {
-                fontSize: '14px',
+            this.add.text(effectiveCenterX, instructionY + instructionSpacing, 'Push crates onto targets to win!', {
+                fontSize: '11px',
                 color: '#AAAAAA'
             }).setOrigin(0.5);
             
-            this.add.text(centerX, instructionY + instructionSpacing * 2, 'R: Reset | N: Next | P: Previous', {
-                fontSize: '12px',
+            this.add.text(effectiveCenterX, instructionY + instructionSpacing * 2, 'R: Reset | N: Next | P: Previous', {
+                fontSize: '10px',
                 color: '#888888'
             }).setOrigin(0.5);
         }
@@ -482,17 +510,24 @@ export class GameScene extends Phaser.Scene {
             this.levelManager.completeCurrentLevel();
             
             const isLastLevel = !this.levelManager.canAdvanceToNextLevel();
+            const isMobile = this.scale.width <= 500;
             
             if (isLastLevel) {
-                this.winText.setText('🎉 Congratulations! You completed all levels! 🎉');
+                if (isMobile) {
+                    this.winText.setText('🎉 All Levels Complete! 🎉\nCongratulations!');
+                } else {
+                    this.winText.setText('🎉 Congratulations!\nYou completed all levels! 🎉');
+                }
             } else {
-                this.winText.setText('🎉 Level Complete! Press N for next level 🎉');
+                if (isMobile) {
+                    this.winText.setText('🎉 Level Complete! 🎉\nSwipe or press N for next');
+                } else {
+                    this.winText.setText('🎉 Level Complete!\nPress N for next level 🎉');
+                }
             }
             
-            this.winText.setPosition(
-                this.cameras.main.centerX - this.winText.width / 2,
-                this.cameras.main.centerY
-            );
+            // Text is already centered with setOrigin(0.5) - no manual positioning needed
+            // The text will automatically center itself at the position set in createUI()
             
             this.updateUI();
         }
@@ -530,27 +565,32 @@ export class GameScene extends Phaser.Scene {
         // Get current game dimensions
         const gameWidth = this.scale.width;
         const gameHeight = this.scale.height;
-        const centerX = gameWidth / 2;
-        const centerY = gameHeight / 2;
         const isMobile = gameWidth < 500;
         
+        // Account for camera zoom on desktop
+        const zoom = this.cameras.main.zoom;
+        const effectiveGameWidth = isMobile ? gameWidth : gameWidth / zoom;
+        const effectiveGameHeight = isMobile ? gameHeight : gameHeight / zoom;
+        const centerX = effectiveGameWidth / 2;
+        const centerY = effectiveGameHeight / 2;
+        
         // Create a level selection overlay - responsive sizing
-        const overlayWidth = Math.min(gameWidth * 0.9, isMobile ? 350 : 580);
-        const overlayHeight = Math.min(gameHeight * 0.8, isMobile ? 400 : 700);
+        const overlayWidth = Math.min(effectiveGameWidth * 0.9, isMobile ? 350 : 320);
+        const overlayHeight = Math.min(effectiveGameHeight * 0.8, isMobile ? 400 : 500);
         
         const overlay = this.add.rectangle(centerX, centerY, overlayWidth, overlayHeight, 0x000000, 0.8);
         const title = this.add.text(centerX, centerY - overlayHeight/2 + 40, 'Select Level', {
-            fontSize: isMobile ? '24px' : '28px',
+            fontSize: isMobile ? '24px' : '20px',
             color: '#FFFFFF',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
         const levels = this.levelManager.getAllLevels();
-        const buttonsPerRow = isMobile ? 1 : 2; // Single column on mobile
-        const buttonWidth = isMobile ? 180 : 220;
-        const buttonHeight = isMobile ? 60 : 80;
-        const buttonSpacingX = isMobile ? 0 : 40;
-        const buttonSpacingY = isMobile ? 20 : 30;
+        const buttonsPerRow = isMobile ? 1 : 2; // Single column on mobile, two on desktop
+        const buttonWidth = isMobile ? 180 : 140;
+        const buttonHeight = isMobile ? 60 : 60;
+        const buttonSpacingX = isMobile ? 0 : 30;
+        const buttonSpacingY = isMobile ? 20 : 25;
         const startY = centerY - overlayHeight/2 + 100;
         
         const levelButtons: Phaser.GameObjects.Text[] = [];
@@ -574,10 +614,10 @@ export class GameScene extends Phaser.Scene {
             }
             
             const button = this.add.text(x, y, `Level ${index + 1}\n${level.name}`, {
-                fontSize: isMobile ? '14px' : '16px',
+                fontSize: isMobile ? '14px' : '12px',
                 color: textColor,
                 backgroundColor: backgroundColor,
-                padding: { x: isMobile ? 15 : 20, y: isMobile ? 10 : 15 },
+                padding: { x: isMobile ? 15 : 12, y: isMobile ? 10 : 8 },
                 align: 'center',
                 wordWrap: { width: buttonWidth - 20 }
             }).setOrigin(0.5);
@@ -593,10 +633,10 @@ export class GameScene extends Phaser.Scene {
         });
         
         const closeButton = this.add.text(centerX, centerY + overlayHeight/2 - 40, 'Close', {
-            fontSize: isMobile ? '18px' : '20px',
+            fontSize: isMobile ? '18px' : '16px',
             color: '#000000',
             backgroundColor: '#FFFFFF',
-            padding: { x: isMobile ? 20 : 30, y: isMobile ? 10 : 15 }
+            padding: { x: isMobile ? 20 : 20, y: isMobile ? 10 : 8 }
         }).setOrigin(0.5);
         
         closeButton.setInteractive();
