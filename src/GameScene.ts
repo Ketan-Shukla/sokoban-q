@@ -462,8 +462,8 @@ export class GameScene extends Phaser.Scene {
         });
 
         // Store references
-        this.touchButtons[key] = button;
-        this.touchButtons[key + '_text'] = buttonText as any;
+        // this.touchButtons[key] = button;
+        // this.touchButtons[key + '_text'] = buttonText as any;
     }
 
     private movePlayer(deltaX: number, deltaY: number) {
