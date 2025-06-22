@@ -355,11 +355,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     private setupTouchControls() {
-        // Setup swipe gestures only
+        // Setup swipe gestures only - no on-screen buttons
         this.setupSwipeGestures();
-        
-        // Remove on-screen directional buttons - only use swipe
-        // this.createTouchButtons(); // Disabled
     }
 
     private setupSwipeGestures() {
@@ -396,74 +393,6 @@ export class GameScene extends Phaser.Scene {
                 }
             }
         });
-    }
-
-    private createTouchButtons() {
-        const gameWidth = this.scale.width;
-        const gameHeight = this.scale.height;
-        const buttonSize = 60;
-        const buttonAlpha = 0.7;
-        const buttonColor = 0x646cff;
-        const buttonPadding = 20;
-
-        // Position buttons in bottom corners
-        const leftX = buttonPadding + buttonSize / 2;
-        const rightX = gameWidth - buttonPadding - buttonSize / 2;
-        const bottomY = gameHeight - buttonPadding - buttonSize / 2;
-        const topY = gameHeight - buttonPadding - buttonSize * 2.5;
-
-        // Create directional buttons
-        this.createTouchButton('left', leftX, bottomY, buttonSize, buttonColor, buttonAlpha, '←', () => this.movePlayer(-1, 0));
-        this.createTouchButton('right', rightX, bottomY, buttonSize, buttonColor, buttonAlpha, '→', () => this.movePlayer(1, 0));
-        this.createTouchButton('up', rightX, topY, buttonSize, buttonColor, buttonAlpha, '↑', () => this.movePlayer(0, -1));
-        this.createTouchButton('down', leftX, topY, buttonSize, buttonColor, buttonAlpha, '↓', () => this.movePlayer(0, 1));
-
-        // Create reset button in center bottom
-        const centerX = gameWidth / 2;
-        this.createTouchButton('reset', centerX, bottomY, buttonSize * 1.2, 0xff6b6b, buttonAlpha, 'R', () => this.resetLevel());
-    }
-
-    private createTouchButton(
-        key: string, 
-        x: number, 
-        y: number, 
-        size: number, 
-        color: number, 
-        alpha: number, 
-        text: string, 
-        callback: () => void
-    ) {
-        // Create button background
-        const button = this.add.graphics();
-        button.fillStyle(color, alpha);
-        button.fillCircle(0, 0, size / 2);
-        button.setPosition(x, y);
-        button.setInteractive(new Phaser.Geom.Circle(0, 0, size / 2), Phaser.Geom.Circle.Contains);
-
-        // Add button text
-        const buttonText = this.add.text(x, y, text, {
-            fontSize: `${size / 2}px`,
-            color: '#FFFFFF',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-
-        // Button interactions
-        button.on('pointerdown', () => {
-            button.setScale(0.9);
-            callback();
-        });
-
-        button.on('pointerup', () => {
-            button.setScale(1);
-        });
-
-        button.on('pointerout', () => {
-            button.setScale(1);
-        });
-
-        // Store references
-        // this.touchButtons[key] = button;
-        // this.touchButtons[key + '_text'] = buttonText as any;
     }
 
     private movePlayer(deltaX: number, deltaY: number) {
