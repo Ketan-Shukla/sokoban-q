@@ -45,7 +45,7 @@ export class GameScene extends Phaser.Scene {
         // Load core game sprites
         this.load.image('player', 'sprites/players/player_01.png');
         this.load.image('crate', 'sprites/crates/crate_01.png');
-        this.load.image('target', 'sprites/targets/environment_03.png'); // Fix target loading
+        this.load.image('target', 'sprites/targets/environment_07.png'); // Fix target loading
         this.load.image('wall', 'sprites/walls/block_01.png');
         this.load.image('ground', 'sprites/ground/ground_01.png');
         
@@ -785,7 +785,7 @@ export class GameScene extends Phaser.Scene {
             nextButton.on('pointerout', () => nextButton.setScale(0.8));
         } else {
             // All levels complete message
-            const completeText = this.add.text(centerX, centerY + 20, 'ALL LEVELS COMPLETE!', {
+            /*const completeText = this.add.text(centerX, centerY + 20, 'ALL LEVELS COMPLETE!', {
                 fontSize: isMobile ? '18px' : '24px',
                 color: '#e74c3c',
                 fontStyle: 'bold',
@@ -796,7 +796,7 @@ export class GameScene extends Phaser.Scene {
             const congratsText = this.add.text(centerX, centerY + 50, 'Congratulations!', {
                 fontSize: isMobile ? '14px' : '18px',
                 color: '#ecf0f1'
-            }).setOrigin(0.5);
+            }).setOrigin(0.5);*/
         }
     }
 
