@@ -261,21 +261,52 @@ export class GameScene extends Phaser.Scene {
      
 
     private clearLevel() {
-        // Clear existing sprites
-        this.crates.forEach(crate => crate.destroy());
-        this.targets.forEach(target => target.destroy());
-        this.walls.forEach(wall => wall.destroy());
-        if (this.player) this.player.destroy();
+        // Clear existing sprites safely
+        if (this.crates) {
+            this.crates.forEach(crate => crate.destroy());
+            this.crates = [];
+        }
         
-        // Clear arrays
-        this.crates = [];
-        this.targets = [];
-        this.walls = [];
+        if (this.targets) {
+            this.targets.forEach(target => target.destroy());
+            this.targets = [];
+        }
+        
+        if (this.walls) {
+            this.walls.forEach(wall => wall.destroy());
+            this.walls = [];
+        }
+        
+        if (this.player) {
+            this.player.destroy();
+        }
+        
+        // Clear any remaining game objects (ground tiles, etc.)
+        const gameObjectsToDestroy: Phaser.GameObjects.GameObject[] = [];
+        this.children.list.forEach(child => {
+            // Identify game objects that should be destroyed (not UI elements)
+            // Type guard to check if the object has a texture property
+            if ('texture' in child && child.texture && (
+                child.texture.key === 'ground' || 
+                child.texture.key === 'wall' || 
+                child.texture.key === 'crate' || 
+                child.texture.key === 'target' ||
+                child.texture.key.startsWith('player')
+            )) {
+                gameObjectsToDestroy.push(child);
+            }
+        });
+        
+        // Destroy collected game objects
+        gameObjectsToDestroy.forEach(obj => obj.destroy());
+        
+        // Reset game state
+        this.gameWon = false;
+        this.gameLost = false;
+        this.moveCount = 0;
         
         // Clear win text
         if (this.winText) this.winText.setText('');
-        
-        // No touch buttons to clear - using gestures only
     }
 
     private createGrid() {
@@ -759,7 +790,9 @@ export class GameScene extends Phaser.Scene {
             const nextText = this.add.text(centerX, centerY + 40, 'NEXT LEVEL', {
                 fontSize: isMobile ? '14px' : '16px',
                 color: '#ffffff',
-                fontStyle: 'bold'
+                fontStyle: 'bold',
+                stroke: '#2c3e50',
+                strokeThickness: 3
             }).setOrigin(0.5);
             
             nextButton.setInteractive();
@@ -848,7 +881,9 @@ export class GameScene extends Phaser.Scene {
         const retryText = this.add.text(centerX, centerY + 50, 'RETRY LEVEL', {
             fontSize: isMobile ? '14px' : '16px',
             color: '#ffffff',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            stroke: '#2c3e50',
+            strokeThickness: 3
         }).setOrigin(0.5);
         
         retryButton.setInteractive();
